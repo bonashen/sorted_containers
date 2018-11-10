@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 from setuptools.command.test import test as TestCommand
 import sortedcontainers
 import sys
@@ -21,13 +21,13 @@ with open('README.rst') as reader:
 setup(
     name=sortedcontainers.__title__,
     version=sortedcontainers.__version__,
-    description='Python Sorted Container Types: SortedList, SortedDict, and SortedSet',
+    description='Sorted Containers -- Sorted List, Sorted Dict, Sorted Set',
     long_description=readme,
     author='Grant Jenks',
     author_email='contact@grantjenks.com',
     url='http://www.grantjenks.com/docs/sortedcontainers/',
     license='Apache 2.0',
-    packages=find_packages(exclude=('tests', 'docs')),
+    packages=['sortedcontainers'],
     tests_require=['tox'],
     cmdclass={'test': Tox},
     install_requires=[],
@@ -38,7 +38,6 @@ setup(
         'Natural Language :: English',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.2',

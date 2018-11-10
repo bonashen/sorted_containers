@@ -59,6 +59,7 @@ L3 cache:              46080K
 NUMA node0 CPU(s):     0-31
 
 """
+from __future__ import print_function
 
 import argparse
 import collections as co
@@ -112,8 +113,8 @@ def init_sorted_list(sl, size, moment=5, fraction=0.1):
     sl.clear()
 
     load = sl._load
-    half = sl._half
-    twice = sl._twice
+    half = sl._load >> 1
+    twice = sl._load << 1
     mu = load * (1.0 + moment / 10.0)
     sigma = load * fraction
     total = 0
@@ -285,7 +286,7 @@ def display(name, times, size, last=['', 0]):
     last[0], last[1] = name, ops_sec
 
     template = '@%9s   %.0e   %.0e %14.5f  %12.3f    %6.3f'
-    print template % (name, size, operations, median_time, ops_sec, ratio)
+    print(template % (name, size, operations, median_time, ops_sec, ratio))
     sys.stdout.flush()
 
 
@@ -314,7 +315,7 @@ if __name__ == '__main__':
 
     template = '@%9s %7s %7s %14s  %12s %9s'
     header = 'Method', 'Size', 'Ops', 'Time', 'Ops/Sec', 'Ratio'
-    print template % header
+    print(template % header)
     sys.stdout.flush()
 
     if args.funcs == 'all':

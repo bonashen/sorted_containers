@@ -1,5 +1,6 @@
 from __future__ import print_function
 from sys import hexversion
+import logging
 
 import time, random, argparse
 from functools import partial
@@ -26,10 +27,13 @@ def measure(test, func, size):
 
 def benchmark(test, name, ctor, setup, func_name, limit):
     if args.load > 0:
-        if name == 'SortedDict':
-            ctor = partial(ctor, args.load)
-        else:
-            ctor = partial(ctor, load=args.load)
+        load = args.load
+        ctor_original = ctor
+        def ctor_load():
+            obj = ctor_original()
+            obj._reset(load)
+            return obj
+        ctor = ctor_load
 
     for size in sizes:
         if not args.no_limit and size > limit:
@@ -45,14 +49,16 @@ def benchmark(test, name, ctor, setup, func_name, limit):
         # record
 
         times = []
+
         for rpt in range(5):
             obj = ctor()
             setup(obj, size)
             func = getattr(obj, func_name)
             times.append(measure(test, func, size))
 
-        print(getattr(test, name_attr), name + args.suffix, size, min(times),
-              max(times), times[2], sum(times) / len(times))
+        times.sort()
+        print(getattr(test, name_attr), name + args.suffix, size, times[0],
+              times[-1], times[2], sum(times) / len(times))
 
 def register_test(func):
     tests[getattr(func, name_attr)] = func
@@ -119,6 +125,20 @@ def main(name):
             if name not in kind_names:
                 continue
             details = impls[test][name]
-            benchmark(tests[test], name, details['ctor'], details['setup'], details['func'], details['limit'])
+            try:
+                benchmark(
+                    tests[test],
+                    name,
+                    details['ctor'],
+                    details['setup'],
+                    details['func'],
+                    details['limit'],
+                )
+            except Exception:
+                logging.exception('Benchmark Error')
+                logging.error('Test: %s', test)
+                logging.error('Name: %s', name)
+                for key in sorted(details):
+                    logging.error('Details[%r]: %s', key, details[key])
 
     detail('Benchmark Stop')

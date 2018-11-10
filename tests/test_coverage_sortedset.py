@@ -5,7 +5,7 @@ from sys import hexversion
 import random
 from .context import sortedcontainers
 from sortedcontainers import SortedSet
-from nose.tools import raises
+import pytest
 
 if hexversion < 0x03000000:
     range = xrange
@@ -18,9 +18,14 @@ def modulo(value):
 
 def test_init():
     temp = SortedSet(range(100))
+    assert temp.key is None
     temp._reset(7)
     temp._check()
     assert all(val == temp[val] for val in temp)
+
+def test_init_key():
+    temp = SortedSet(range(100), key=negate)
+    assert temp.key == negate
 
 def test_contains():
     temp = SortedSet(range(100))
@@ -471,7 +476,3 @@ def test_pickle():
     beta = pickle.loads(pickle.dumps(alpha))
     assert alpha == beta
     assert alpha._key == beta._key
-
-if __name__ == '__main__':
-    import nose
-    nose.main()

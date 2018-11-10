@@ -6,7 +6,7 @@ import random
 from .context import sortedcontainers
 from sortedcontainers import SortedList
 from itertools import chain
-from nose.tools import raises
+import pytest
 
 if hexversion < 0x03000000:
     from itertools import izip as zip
@@ -14,13 +14,12 @@ if hexversion < 0x03000000:
 
 def test_init():
     slt = SortedList()
+    assert slt.key is None
     slt._check()
 
     slt = SortedList()
     slt._reset(10000)
     assert slt._load == 10000
-    assert slt._half == 5000
-    assert slt._dual == 20000
     slt._check()
 
     slt = SortedList(range(10000))
@@ -114,21 +113,21 @@ def test_remove():
 
     assert all(tup[0] == tup[1] for tup in zip(slt, [1, 2, 2, 3, 3, 5]))
 
-@raises(ValueError)
 def test_remove_valueerror1():
     slt = SortedList()
-    slt.remove(0)
+    with pytest.raises(ValueError):
+        slt.remove(0)
 
-@raises(ValueError)
 def test_remove_valueerror2():
     slt = SortedList(range(100))
     slt._reset(10)
-    slt.remove(100)
+    with pytest.raises(ValueError):
+        slt.remove(100)
 
-@raises(ValueError)
 def test_remove_valueerror3():
     slt = SortedList([1, 2, 2, 2, 3, 3, 5])
-    slt.remove(4)
+    with pytest.raises(ValueError):
+        slt.remove(4)
 
 def test_delete():
     slt = SortedList(range(20))
@@ -210,26 +209,26 @@ def test_getitem_slice_big():
     for start, stop, step in itr:
         assert slt[start:stop:step] == lst[start:stop:step]
 
-@raises(ValueError)
 def test_getitem_slicezero():
     slt = SortedList(range(100))
     slt._reset(17)
-    slt[::0]
+    with pytest.raises(ValueError):
+        slt[::0]
 
-@raises(IndexError)
 def test_getitem_indexerror1():
     slt = SortedList()
-    slt[5]
+    with pytest.raises(IndexError):
+        slt[5]
 
-@raises(IndexError)
 def test_getitem_indexerror2():
     slt = SortedList(range(100))
-    slt[200]
+    with pytest.raises(IndexError):
+        slt[200]
 
-@raises(IndexError)
 def test_getitem_indexerror3():
     slt = SortedList(range(100))
-    slt[-101]
+    with pytest.raises(IndexError):
+        slt[-101]
 
 def test_delitem():
     random.seed(0)
@@ -255,97 +254,6 @@ def test_delitem_slice():
     del slt[10:40:2]
     del slt[10:40:-2]
 
-def test_setitem():
-    random.seed(0)
-    slt = SortedList(range(0, 100, 10))
-    slt._reset(4)
-
-    values = list(enumerate(range(5, 105, 10)))
-    random.shuffle(values)
-    for pos, val in values:
-        slt[pos] = val
-
-    slt[-2] = 85
-    slt._check()
-
-def test_setitem_slice():
-    slt = SortedList(range(100))
-    slt._reset(17)
-    slt[:10] = iter(range(10))
-    assert slt == list(range(100))
-    slt[:10:2] = iter(val * 2 for val in range(5))
-    assert slt == list(range(100))
-    slt[:50] = range(-50, 50)
-    assert slt == list(range(-50, 100))
-    slt[:100] = range(50)
-    assert slt == list(range(100))
-    slt[:] = range(100)
-    assert slt == list(range(100))
-    slt[90:] = []
-    assert slt == list(range(90))
-    slt[:10] = []
-    assert slt == list(range(10, 90))
-    slt._check()
-
-def test_setitem_slice_aliasing():
-    slt = SortedList([0])
-    slt[1:1] = slt
-    assert slt == [0, 0]
-
-def test_setitem_empty_slice():
-    sl = SortedList(['a'])
-    sl[1:0] = ['b']
-    assert sl == ['a', 'b']
-
-@raises(ValueError)
-def test_setitem_slice_bad():
-    slt = SortedList(range(100))
-    slt._reset(17)
-    slt[:10] = list(reversed(range(10)))
-
-@raises(ValueError)
-def test_setitem_slice_bad1():
-    slt = SortedList(range(100))
-    slt._reset(17)
-    slt[10:20] = range(20, 30)
-
-@raises(ValueError)
-def test_setitem_slice_bad2():
-    slt = SortedList(range(100))
-    slt._reset(17)
-    slt[20:30] = range(10, 20)
-
-def test_setitem_extended_slice():
-    slt = SortedList(range(0, 1000, 10))
-    slt._reset(17)
-    lst = list(range(0, 1000, 10))
-    lst[10:90:10] = range(105, 905, 100)
-    slt[10:90:10] = range(105, 905, 100)
-    assert slt == lst
-    slt._check()
-
-@raises(ValueError)
-def test_setitem_extended_slice_bad1():
-    slt = SortedList(range(100))
-    slt._reset(17)
-    slt[20:80:3] = list(range(10))
-
-@raises(ValueError)
-def test_setitem_extended_slice_bad2():
-    slt = SortedList(range(100))
-    slt._reset(17)
-    slt[40:90:5] = list(range(10))
-
-@raises(ValueError)
-def test_setitem_valueerror1():
-    slt = SortedList(range(10))
-    slt[9] = 0
-
-@raises(ValueError)
-def test_setitem_valueerror2():
-    slt = SortedList(range(10))
-    slt[0] = 10
-
 def test_iter():
     slt = SortedList(range(10000))
     itr = iter(slt)
@@ -355,6 +263,11 @@ def test_reversed():
     slt = SortedList(range(10000))
     rev = reversed(slt)
     assert all(tup[0] == tup[1] for tup in zip(range(9999, -1, -1), rev))
+
+def test_reverse():
+    slt = SortedList(range(10000))
+    with pytest.raises(NotImplementedError):
+        slt.reverse()
 
 def test_islice():
     sl = SortedList()
@@ -488,104 +401,6 @@ def test_count():
 
     assert slt.count(100) == 0
 
-def test_append():
-    slt = SortedList()
-    slt._reset(17)
-
-    slt.append(0)
-
-    for val in range(1, 1000):
-        slt.append(val)
-        slt._check()
-
-@raises(ValueError)
-def test_append_valueerror():
-    slt = SortedList(range(100))
-    slt.append(5)
-
-def test_extend():
-    slt = SortedList()
-    slt._reset(17)
-
-    slt.extend([])
-    slt._check()
-
-    slt.extend(range(100))
-    slt._check()
-
-    slt.extend([])
-    slt._check()
-
-    slt.extend(list(range(100, 200)))
-    slt._check()
-
-    for val in range(200, 300):
-        del slt._index[:]
-        slt._build_index()
-        slt.extend([val] * (val - 199))
-        slt._check()
-
-@raises(ValueError)
-def test_extend_valueerror1():
-    slt = SortedList()
-    slt.extend([1, 2, 3, 5, 4, 6])
-
-@raises(ValueError)
-def test_extend_valueerror2():
-    slt = SortedList(range(20))
-    slt._reset(4)
-    slt.extend([17, 18, 19, 20, 21, 22, 23])
-
-def test_insert():
-    slt = SortedList(range(10))
-    slt._reset(4)
-    slt.insert(-1, 9)
-    slt._check()
-    slt.insert(-100, 0)
-    slt._check()
-    slt.insert(100, 10)
-    slt._check()
-
-    slt = SortedList()
-    slt._reset(4)
-    slt.insert(0, 5)
-    slt._check()
-
-    slt = SortedList(range(5, 15))
-    slt._reset(4)
-    for rpt in range(8):
-        slt.insert(0, 4)
-        slt._check()
-
-    slt = SortedList(range(10))
-    slt._reset(4)
-    slt.insert(8, 8)
-    slt._check()
-
-@raises(ValueError)
-def test_insert_valueerror1():
-    slt = SortedList(range(10))
-    slt._reset(4)
-    slt.insert(10, 5)
-
-@raises(ValueError)
-def test_insert_valueerror2():
-    slt = SortedList(range(10))
-    slt._reset(4)
-    slt.insert(0, 10)
-
-@raises(ValueError)
-def test_insert_valueerror3():
-    slt = SortedList(range(10))
-    slt._reset(4)
-    slt.insert(5, 3)
-
-@raises(ValueError)
-def test_insert_valueerror4():
-    slt = SortedList(range(10))
-    slt._reset(4)
-    slt.insert(5, 7)
-
 def test_pop():
     slt = SortedList(range(10))
     slt._reset(4)
@@ -599,22 +414,22 @@ def test_pop():
     assert slt.pop(4) == 5
     slt._check()
 
-@raises(IndexError)
 def test_pop_indexerror1():
     slt = SortedList(range(10))
     slt._reset(4)
-    slt.pop(-11)
+    with pytest.raises(IndexError):
+        slt.pop(-11)
 
-@raises(IndexError)
 def test_pop_indexerror2():
     slt = SortedList(range(10))
     slt._reset(4)
-    slt.pop(10)
+    with pytest.raises(IndexError):
+        slt.pop(10)
 
-@raises(IndexError)
 def test_pop_indexerror3():
     slt = SortedList()
-    slt.pop()
+    with pytest.raises(IndexError):
+        slt.pop()
 
 def test_index():
     slt = SortedList(range(100))
@@ -637,46 +452,46 @@ def test_index():
 
     assert slt.index(0, -1000) == 0
 
-@raises(ValueError)
 def test_index_valueerror1():
     slt = SortedList([0] * 10)
     slt._reset(4)
-    slt.index(0, 10)
+    with pytest.raises(ValueError):
+        slt.index(0, 10)
 
-@raises(ValueError)
 def test_index_valueerror2():
     slt = SortedList([0] * 10)
     slt._reset(4)
-    slt.index(0, 0, -10)
+    with pytest.raises(ValueError):
+        slt.index(0, 0, -10)
 
-@raises(ValueError)
 def test_index_valueerror3():
     slt = SortedList([0] * 10)
     slt._reset(4)
-    slt.index(0, 7, 3)
+    with pytest.raises(ValueError):
+        slt.index(0, 7, 3)
 
-@raises(ValueError)
 def test_index_valueerror4():
     slt = SortedList([0] * 10)
     slt._reset(4)
-    slt.index(1)
+    with pytest.raises(ValueError):
+        slt.index(1)
 
-@raises(ValueError)
 def test_index_valueerror5():
     slt = SortedList()
-    slt.index(1)
+    with pytest.raises(ValueError):
+        slt.index(1)
 
-@raises(ValueError)
 def test_index_valueerror6():
     slt = SortedList(range(10))
     slt._reset(4)
-    slt.index(3, 5)
+    with pytest.raises(ValueError):
+        slt.index(3, 5)
 
-@raises(ValueError)
 def test_index_valueerror7():
     slt = SortedList([0] * 10 + [2] * 10)
     slt._reset(4)
-    slt.index(1, 0, 10)
+    with pytest.raises(ValueError):
+        slt.index(1, 0, 10)
 
 def test_mul():
     this = SortedList(range(10))
@@ -782,13 +597,9 @@ def test_build_index():
     slt._build_index()
     slt._check()
 
-@raises(AssertionError)
 def test_check():
     slt = SortedList(range(10))
     slt._reset(4)
     slt._len = 5
-    slt._check()
-
-if __name__ == '__main__':
-    import nose
-    nose.main()
+    with pytest.raises(AssertionError):
+        slt._check()

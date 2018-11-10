@@ -108,49 +108,18 @@ from .context import sortedcontainers
 from sortedcontainers import SortedList
 kinds['SortedList'] = SortedList
 
-from sortedcontainers import SortedListWithKey
-kinds['SortedListWithKey'] = SortedListWithKey
+from sortedcontainers import SortedKeyList
+kinds['SortedKeyList'] = SortedKeyList
 
 try:
     from blist import sortedlist
-    kinds['blist.sortedlist'] = sortedlist
-    from functools import partial
-    def identity(value):
-        return value
-    kinds['blist.sortedlist(key=identity)'] = partial(sortedlist, key=identity)
+    kinds['B-Tree'] = sortedlist
 except ImportError:
     warnings.warn('No module named blist', ImportWarning)
 
 try:
-    from sortedcollection import SortedCollection
-    from bisect import bisect_left
-
-    SortedCollection.add = SortedCollection.insert
-
-    def update(self, iterable):
-        for value in iterable:
-            self.insert(value)
-    SortedCollection.update = update
-
-    def bisect(self, item):
-        key = self._key(item)
-        pos = bisect_left(self._keys, key)
-        return pos
-    SortedCollection.bisect = bisect
-
-    def pop(self):
-        self._keys.pop()
-        return self._items.pop()
-    SortedCollection.pop = pop
-
-    def discard(self, item):
-        try:
-            self.remove(item)
-        except ValueError:
-            pass
-    SortedCollection.discard = discard
-
-    kinds['sortedcollection'] = SortedCollection
+    from .sortedcollection import SortedCollection
+    kinds['List'] = SortedCollection
 except ImportError:
     warnings.warn('No module named sortedcollection', ImportWarning)
 
@@ -174,7 +143,7 @@ for name, kind in kinds.items():
         'func': 'update',
         'limit': 1000000
     }
-limit('update_small', 'sortedcollection', 100000)
+limit('update_small', 'List', 100000)
 
 for name, kind in kinds.items():
     impls['update_large'][name] = {
@@ -183,7 +152,7 @@ for name, kind in kinds.items():
         'func': 'update',
         'limit': 1000000
     }
-limit('update_large', 'sortedcollection', 100000)
+limit('update_large', 'List', 100000)
 
 for name, kind in kinds.items():
     impls['contains'][name] = {
@@ -208,6 +177,7 @@ for name, kind in kinds.items():
         'func': '__delitem__',
         'limit': 1000000
     }
+limit('delitem', 'List', 100000)
 
 for name, kind in kinds.items():
     impls['bisect'][name] = {
@@ -264,6 +234,8 @@ class Mixed:
     def __call__(self, *args, **kwargs):
         self.obj = self.kind(*args, **kwargs)
         return self
+    def _reset(self, load):
+        self.obj._reset(load)
     def update(self, values):
         self.obj.update(values)
     def run(self, value):
@@ -301,7 +273,7 @@ for name, kind in kinds.items():
         'func': 'run',
         'limit': 1000000
     }
-limit('priorityqueue', 'sortedcollection', 100000)
+limit('priorityqueue', 'List', 100000)
 
 class Multiset(Mixed):
     def run(self, value):
@@ -331,7 +303,7 @@ for name, kind in kinds.items():
         'func': 'run',
         'limit': 1000000
     }
-limit('multiset', 'sortedcollection', 100000)
+limit('multiset', 'List', 100000)
 
 class Ranking(Mixed):
     def run(self, value):
@@ -361,7 +333,7 @@ for name, kind in kinds.items():
         'func': 'run',
         'limit': 1000000
     }
-limit('ranking', 'sortedcollection', 100000)
+limit('ranking', 'List', 100000)
 
 class Neighbor(Mixed):
     def run(self, value):
@@ -392,7 +364,7 @@ for name, kind in kinds.items():
         'func': 'run',
         'limit': 1000000
     }
-limit('neighbor', 'sortedcollection', 100000)
+limit('neighbor', 'List', 100000)
 
 class Intervals(Mixed):
     def run(self, value):
@@ -432,7 +404,7 @@ for name, kind in kinds.items():
         'func': 'run',
         'limit': 1000000
     }
-limit('intervals', 'sortedcollection', 100000)
+limit('intervals', 'List', 100000)
 
 for name, kind in kinds.items():
     impls['init'][name] = {
@@ -441,8 +413,7 @@ for name, kind in kinds.items():
         'func': '__init__',
         'limit': 1000000
     }
-limit('init', 'blist.sortedlist', 100000)
-limit('init', 'blist.sortedlist(key=identity)', 100000)
+limit('init', 'B-Tree', 100000)
 
 if __name__ == '__main__':
     main('SortedList')
